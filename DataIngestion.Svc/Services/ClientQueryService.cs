@@ -13,6 +13,21 @@ public class ClientQueryService : IClientQueryService
         _dbContext = dbContext;
     }
 
+    public async Task<List<IngestionRunSummaryDto>> GetRunsAsync() =>
+        await _dbContext.IngestionRuns
+            .AsNoTracking()
+            .OrderByDescending(r => r.Id)
+            .Select(r => new IngestionRunSummaryDto
+            {
+                RunId = r.Id,
+                KnowledgeDate = r.KnowledgeDate,
+                ZipSource = r.ZipUrl,
+                ClientsProcessed = r.ClientsProcessed,
+                AccountsProcessed = r.AccountsProcessed,
+                HoldingsProcessed = r.HoldingsProcessed
+            })
+            .ToListAsync();
+
     public async Task<PagedResult<ClientSummaryDto>> GetClientsAsync(int page, int pageSize, DateTimeOffset? asOf = null)
     {
         var latestRunId = await RunIdAsOfAsync(asOf);

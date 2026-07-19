@@ -16,6 +16,10 @@ public class IndexModel : PageModel
     [BindProperty(SupportsGet = true)]
     public string? AsOf { get; set; }
 
+    [BindProperty(SupportsGet = true)]
+    public string? Tab { get; set; }
+
+    public List<IngestionRunSummaryDto> Runs { get; set; } = new();
     public List<ClientSummaryDto> Clients { get; set; } = new();
     public IngestionResult? LastIngestionResult { get; set; }
     public bool ShowInputError { get; set; }
@@ -28,6 +32,7 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
+        Runs = await _queryService.GetRunsAsync();
         var paged = await _queryService.GetClientsAsync(1, 10000, ParseAsOf());
         Clients = paged.Items;
     }
@@ -49,11 +54,13 @@ public class IndexModel : PageModel
         else
         {
             ShowInputError = true;
+            Runs = await _queryService.GetRunsAsync();
             var paged = await _queryService.GetClientsAsync(1, 10000, ParseAsOf());
             Clients = paged.Items;
             return Page();
         }
 
+        Runs = await _queryService.GetRunsAsync();
         var result = await _queryService.GetClientsAsync(1, 10000, ParseAsOf());
         Clients = result.Items;
         return Page();

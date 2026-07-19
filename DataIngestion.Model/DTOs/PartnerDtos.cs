@@ -129,6 +129,16 @@ public class HoldingSummaryDto
     public string AssetClass { get; set; } = string.Empty;
 }
 
+public class IngestionRunSummaryDto
+{
+    public int RunId { get; set; }
+    public DateTimeOffset KnowledgeDate { get; set; }
+    public string ZipSource { get; set; } = string.Empty;
+    public int ClientsProcessed { get; set; }
+    public int AccountsProcessed { get; set; }
+    public int HoldingsProcessed { get; set; }
+}
+
 public class PagedResult<T>
 {
     public List<T> Items { get; set; } = new();
