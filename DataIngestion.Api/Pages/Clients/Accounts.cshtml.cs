@@ -12,6 +12,9 @@ public class AccountsModel : PageModel
     public string ClientId { get; set; } = string.Empty;
     public List<AccountSummaryDto> Accounts { get; set; } = new();
 
+    [BindProperty(SupportsGet = true)]
+    public string? AsOf { get; set; }
+
     public AccountsModel(IClientQueryService queryService)
     {
         _queryService = queryService;
@@ -20,9 +23,17 @@ public class AccountsModel : PageModel
     public async Task<IActionResult> OnGetAsync(string clientId)
     {
         ClientId = clientId;
-        var accounts = await _queryService.GetAccountsAsync(clientId);
+        var accounts = await _queryService.GetAccountsAsync(clientId, ParseAsOf());
         if (accounts == null) return NotFound();
         Accounts = accounts;
         return Page();
+    }
+
+    private DateTimeOffset? ParseAsOf()
+    {
+        if (string.IsNullOrEmpty(AsOf)) return null;
+        return DateTime.TryParse(AsOf, null, System.Globalization.DateTimeStyles.AssumeUniversal, out var dt)
+            ? new DateTimeOffset(dt.ToUniversalTime(), TimeSpan.Zero)
+            : null;
     }
 }

@@ -100,7 +100,7 @@ else
         <tbody>
             @foreach (var c in Model.Clients)
             {
-                <tr data-url="/Clients/Accounts/@c.ClientId" style="cursor:pointer">
+                <tr data-url="/Clients/Accounts/@c.ClientId@(string.IsNullOrEmpty(Model.AsOf) ? "" : "?asOf=" + Uri.EscapeDataString(Model.AsOf))" style="cursor:pointer">
                     <td>@c.ClientId</td>
                     <td>@c.FirstName @c.LastName</td>
                     <td>@c.Email</td>

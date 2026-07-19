@@ -6,13 +6,23 @@
 
 <nav aria-label="breadcrumb">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a asp-page="/Index">Clients</a></li>
-        <li class="breadcrumb-item"><a asp-page="/Clients/Accounts" asp-route-clientId="@Model.ClientId">@Model.ClientId</a></li>
+        <li class="breadcrumb-item">
+            <a href="/@(string.IsNullOrEmpty(Model.AsOf) ? "" : "?asOf=" + Uri.EscapeDataString(Model.AsOf))">Clients</a>
+        </li>
+        <li class="breadcrumb-item">
+            <a href="/Clients/Accounts/@Model.ClientId@(string.IsNullOrEmpty(Model.AsOf) ? "" : "?asOf=" + Uri.EscapeDataString(Model.AsOf))">@Model.ClientId</a>
+        </li>
         <li class="breadcrumb-item active">@Model.AccountId</li>
     </ol>
 </nav>
 
-<h4 class="mb-3">Holdings for <span class="text-muted">@Model.AccountId</span></h4>
+<h4 class="mb-3">
+    Holdings for <span class="text-muted">@Model.AccountId</span>
+    @if (!string.IsNullOrEmpty(Model.AsOf))
+    {
+        <span class="badge bg-secondary fw-normal fs-6 ms-2">as of @Model.AsOf (UTC)</span>
+    }
+</h4>
 
 <table id="holdingsTable" class="table table-striped table-hover table-sm">
     <thead class="table-dark">
