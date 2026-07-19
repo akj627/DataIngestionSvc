@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="DataIngestion.Api/DataIngestion.Api.csproj" />
+  <Project Path="DataIngestion.Tests/DataIngestion.Tests.csproj" />
+</Solution>

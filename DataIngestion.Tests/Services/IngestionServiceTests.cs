@@ -1,0 +1,207 @@
+using System.Net;
+using DataIngestion.Api.Data;
+using DataIngestion.Api.Services;
+using DataIngestion.Tests.Helpers;
+using Microsoft.Data.Sqlite;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
+
+namespace DataIngestion.Tests.Services;
+
+public class IngestionServiceTests : IDisposable
+{
+    private readonly SqliteConnection _connection;
+    private readonly AppDbContext _dbContext;
+
+    public IngestionServiceTests()
+    {
+        _connection = new SqliteConnection("Data Source=:memory:");
+        _connection.Open();
+
+        var options = new DbContextOptionsBuilder<AppDbContext>()
+            .UseSqlite(_connection)
+            .Options;
+
+        _dbContext = new AppDbContext(options);
+        _dbContext.Database.EnsureCreated();
+    }
+
+    public void Dispose()
+    {
+        _dbContext.Dispose();
+        _connection.Dispose();
+    }
+
+    private IngestionService CreateService(byte[] zipContent, HttpStatusCode statusCode = HttpStatusCode.OK)
+    {
+        var httpClient = new HttpClient(new MockHttpMessageHandler(zipContent, statusCode));
+        return new IngestionService(httpClient, _dbContext, NullLogger<IngestionService>.Instance);
+    }
+
+    // ── Happy path ──────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task IngestAsync_ValidZipWithMultipleClients_PersistsAllClients()
+    {
+        var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001"),
+            ["CLT-002.json"] = TestDataBuilder.ClientJson("CLT-002"),
+            ["CLT-003.json"] = TestDataBuilder.ClientJson("CLT-003"),
+        });
+
+        await CreateService(zip).IngestAsync("http://example.com/data.zip");
+
+        var count = await _dbContext.Clients.AsNoTracking().CountAsync();
+        Assert.Equal(3, count);
+    }
+
+    [Fact]
+    public async Task IngestAsync_ValidZip_ReturnsCorrectCounts()
+    {
+        // 2 clients, 2 accounts each, 3 holdings per account = 12 holdings total
+        var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001", accountCount: 2, holdingsPerAccount: 3),
+            ["CLT-002.json"] = TestDataBuilder.ClientJson("CLT-002", accountCount: 2, holdingsPerAccount: 3),
+        });
+
+        var result = await CreateService(zip).IngestAsync("http://example.com/data.zip");
+
+        Assert.Equal(2, result.ClientsProcessed);
+        Assert.Equal(4, result.AccountsProcessed);
+        Assert.Equal(12, result.HoldingsProcessed);
+    }
+
+    // ── Upsert behaviour ────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task IngestAsync_SameZipIngestedTwice_DoesNotDuplicateClients()
+    {
+        var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001"),
+        });
+
+        var service = CreateService(zip);
+        await service.IngestAsync("http://example.com/data.zip");
+        await service.IngestAsync("http://example.com/data.zip");
+
+        var clientCount = await _dbContext.Clients.AsNoTracking().CountAsync();
+        var accountCount = await _dbContext.Accounts.AsNoTracking().CountAsync();
+        Assert.Equal(1, clientCount);
+        Assert.Equal(1, accountCount);
+    }
+
+    [Fact]
+    public async Task IngestAsync_SecondIngestionWithUpdatedEmail_UpdatesExistingRecord()
+    {
+        var zip1 = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001", email: "old@example.com"),
+        });
+        var zip2 = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001", email: "new@example.com"),
+        });
+
+        await CreateService(zip1).IngestAsync("http://example.com/data.zip");
+        await CreateService(zip2).IngestAsync("http://example.com/data.zip");
+
+        var client = await _dbContext.Clients.AsNoTracking()
+            .SingleAsync(c => c.ClientId == "CLT-001");
+        Assert.Equal("new@example.com", client.Email);
+    }
+
+    [Fact]
+    public async Task IngestAsync_SecondIngestionWithFewerAccounts_RemovesOldAccounts()
+    {
+        var zip1 = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001", accountCount: 3),
+        });
+        var zip2 = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001", accountCount: 1),
+        });
+
+        await CreateService(zip1).IngestAsync("http://example.com/data.zip");
+        await CreateService(zip2).IngestAsync("http://example.com/data.zip");
+
+        var accountCount = await _dbContext.Accounts.AsNoTracking().CountAsync();
+        Assert.Equal(1, accountCount);
+    }
+
+    // ── Edge cases: empty / non-JSON content ────────────────────────────────
+
+    [Fact]
+    public async Task IngestAsync_EmptyZip_ReturnsZeroCountsAndPersistsNothing()
+    {
+        var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>());
+
+        var result = await CreateService(zip).IngestAsync("http://example.com/data.zip");
+
+        Assert.Equal(0, result.ClientsProcessed);
+        Assert.Equal(0, result.AccountsProcessed);
+        Assert.Equal(0, result.HoldingsProcessed);
+        Assert.Equal(0, await _dbContext.Clients.AsNoTracking().CountAsync());
+    }
+
+    [Fact]
+    public async Task IngestAsync_ZipContainsOnlyNonJsonFiles_IgnoresFilesAndPersistsNothing()
+    {
+        var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["README.txt"] = "this is not json",
+            ["data.csv"]   = "col1,col2\n1,2",
+        });
+
+        var result = await CreateService(zip).IngestAsync("http://example.com/data.zip");
+
+        Assert.Equal(0, result.ClientsProcessed);
+        Assert.Equal(0, await _dbContext.Clients.AsNoTracking().CountAsync());
+    }
+
+    // ── Edge cases: bad data ─────────────────────────────────────────────────
+
+    [Fact]
+    public async Task IngestAsync_OneFileMalformed_SkipsBadFileAndProcessesRest()
+    {
+        var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001"),
+            ["bad.json"]     = "{ this is not valid json !!!",
+        });
+
+        var result = await CreateService(zip).IngestAsync("http://example.com/data.zip");
+
+        Assert.Equal(1, result.ClientsProcessed);
+        Assert.Equal(1, await _dbContext.Clients.AsNoTracking().CountAsync());
+    }
+
+    [Fact]
+    public async Task IngestAsync_ClientWithNoAccounts_PersistsClientWithEmptyAccountList()
+    {
+        var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001", accountCount: 0),
+        });
+
+        var result = await CreateService(zip).IngestAsync("http://example.com/data.zip");
+
+        Assert.Equal(1, result.ClientsProcessed);
+        Assert.Equal(0, result.AccountsProcessed);
+        Assert.Equal(0, await _dbContext.Accounts.AsNoTracking().CountAsync());
+    }
+
+    // ── Edge cases: HTTP failures ────────────────────────────────────────────
+
+    [Fact]
+    public async Task IngestAsync_HttpReturns500_ThrowsHttpRequestException()
+    {
+        var service = CreateService(Array.Empty<byte>(), HttpStatusCode.InternalServerError);
+
+        await Assert.ThrowsAsync<HttpRequestException>(
+            () => service.IngestAsync("http://example.com/data.zip"));
+    }
+}
