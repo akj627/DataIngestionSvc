@@ -1,8 +1,8 @@
-using DataIngestion.Api.Data;
-using DataIngestion.Api.DTOs;
+using DataIngestion.Model.Data;
+using DataIngestion.Model.DTOs;
 using Microsoft.EntityFrameworkCore;
 
-namespace DataIngestion.Api.Services;
+namespace DataIngestion.Svc.Services;
 
 public class ClientQueryService : IClientQueryService
 {

@@ -1,7 +1,7 @@
-using DataIngestion.Api.Models;
+using DataIngestion.Model.Models;
 using Microsoft.EntityFrameworkCore;
 
-namespace DataIngestion.Api.Data;
+namespace DataIngestion.Model.Data;
 
 public class AppDbContext : DbContext
 {

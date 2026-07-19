@@ -1,10 +1,11 @@
 using System.IO.Compression;
 using System.Text.Json;
-using DataIngestion.Api.Data;
-using DataIngestion.Api.DTOs;
-using DataIngestion.Api.Models;
+using DataIngestion.Model.Data;
+using DataIngestion.Model.DTOs;
+using DataIngestion.Model.Models;
+using Microsoft.Extensions.Logging;
 
-namespace DataIngestion.Api.Services;
+namespace DataIngestion.Svc.Services;
 
 public class IngestionService : IIngestionService
 {

@@ -1,6 +1,6 @@
 using System.Net;
-using DataIngestion.Api.Data;
-using DataIngestion.Api.Services;
+using DataIngestion.Model.Data;
+using DataIngestion.Svc.Services;
 using DataIngestion.Tests.Helpers;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;

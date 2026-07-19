@@ -1,7 +1,7 @@
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 
-namespace DataIngestion.Api.Models;
+namespace DataIngestion.Model.Models;
 
 public class Holding
 {

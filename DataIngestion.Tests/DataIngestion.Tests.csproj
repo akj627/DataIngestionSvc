@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <TargetFramework>net10.0</TargetFramework>
@@ -26,6 +26,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\DataIngestion.Api\DataIngestion.Api.csproj" />
+    <ProjectReference Include="..\DataIngestion.Model\DataIngestion.Model.csproj" />
+    <ProjectReference Include="..\DataIngestion.Svc\DataIngestion.Svc.csproj" />
   </ItemGroup>
 
 </Project>

@@ -1,6 +1,6 @@
-using DataIngestion.Api.DTOs;
+using DataIngestion.Model.DTOs;
 
-namespace DataIngestion.Api.Services;
+namespace DataIngestion.Svc.Services;
 
 public interface IClientQueryService
 {

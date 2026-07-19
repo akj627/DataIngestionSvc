@@ -1,5 +1,5 @@
-using DataIngestion.Api.DTOs;
-using DataIngestion.Api.Services;
+using DataIngestion.Model.DTOs;
+using DataIngestion.Svc.Services;
 using Microsoft.AspNetCore.Mvc;
 
 namespace DataIngestion.Api.Controllers;

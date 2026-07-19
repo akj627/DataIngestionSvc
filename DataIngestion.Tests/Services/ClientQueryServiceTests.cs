@@ -1,6 +1,6 @@
-using DataIngestion.Api.Data;
-using DataIngestion.Api.Models;
-using DataIngestion.Api.Services;
+using DataIngestion.Model.Data;
+using DataIngestion.Model.Models;
+using DataIngestion.Svc.Services;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 

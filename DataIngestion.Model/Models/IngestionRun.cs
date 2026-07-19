@@ -1,6 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 
-namespace DataIngestion.Api.Models;
+namespace DataIngestion.Model.Models;
 
 public class IngestionRun
 {

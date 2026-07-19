@@ -1,5 +1,5 @@
-using DataIngestion.Api.Data;
-using DataIngestion.Api.Services;
+using DataIngestion.Model.Data;
+using DataIngestion.Svc.Services;
 using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
