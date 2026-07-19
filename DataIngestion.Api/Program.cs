@@ -9,8 +9,9 @@ builder.Services.AddRazorPages();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var dbPath = Path.GetFullPath(Path.Combine(builder.Environment.ContentRootPath, "..", "dataingestion.db"));
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlite(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlite($"Data Source={dbPath}"));
 
 builder.Services.AddHttpClient<IIngestionService, IngestionService>();
 builder.Services.AddScoped<IClientQueryService, ClientQueryService>();

@@ -45,7 +45,7 @@ dotnet run
 
 - UI: `http://localhost:5141`
 - Swagger: `http://localhost:5141/swagger`
-- DB: `DataIngestion.Api/dataingestion.db` (created automatically on first run)
+- DB: `dataingestion.db` at the repo root (created automatically on first run)
 
 > If you've run the app before and the schema has changed, delete `dataingestion.db` before restarting.
 

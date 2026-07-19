@@ -61,7 +61,7 @@ dotnet run
 # App starts on http://localhost:5141 (or check Properties/launchSettings.json)
 # UI:      http://localhost:5141
 # Swagger: http://localhost:5141/swagger
-# DB file: DataIngestion.Api/dataingestion.db (created automatically)
+# DB file: dataingestion.db at repo root (created automatically)
 ```
 
 ## How to run tests
