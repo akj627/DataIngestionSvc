@@ -1,8 +1,10 @@
 using System.IO.Compression;
+using System.Security.Cryptography;
 using System.Text.Json;
 using DataIngestion.Model.Data;
 using DataIngestion.Model.DTOs;
 using DataIngestion.Model.Models;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 
 namespace DataIngestion.Svc.Services;
@@ -31,12 +33,21 @@ public class IngestionService : IIngestionService
 
     private async Task<IngestionResult> ProcessAsync(byte[] zipBytes, string sourceLabel)
     {
+        var hash = Convert.ToHexString(SHA256.HashData(zipBytes));
+
+        var existing = await _dbContext.IngestionRuns
+            .AsNoTracking()
+            .FirstOrDefaultAsync(r => r.ZipHash == hash);
+        if (existing != null)
+            throw new DuplicateIngestionException(existing.Id, existing.KnowledgeDate);
+
         var clientDtos = ParseZip(zipBytes);
 
         var run = new IngestionRun
         {
             KnowledgeDate = DateTimeOffset.UtcNow,
-            ZipUrl = sourceLabel
+            ZipUrl = sourceLabel,
+            ZipHash = hash
         };
         _dbContext.IngestionRuns.Add(run);
 

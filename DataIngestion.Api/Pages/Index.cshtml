@@ -3,7 +3,7 @@
 @{
     ViewData["Title"] = "Data Ingestion";
     var activeTab = (!string.IsNullOrEmpty(Model.AsOf) || Model.Tab == "clients") ? "clients" : "ingestion";
-    if (Model.LastIngestionResult != null || Model.ShowInputError) activeTab = "ingestion";
+    if (Model.LastIngestionResult != null || Model.ShowInputError || Model.IngestionError != null) activeTab = "ingestion";
 }
 
 <ul class="nav nav-tabs mb-4">
@@ -46,6 +46,13 @@
             }
             <button type="submit" class="btn btn-primary">Run Ingestion</button>
         </form>
+
+        @if (Model.IngestionError != null)
+        {
+            <div class="alert alert-warning mt-3 mb-0">
+                <strong>Duplicate:</strong> @Model.IngestionError
+            </div>
+        }
 
         @if (Model.LastIngestionResult != null)
         {

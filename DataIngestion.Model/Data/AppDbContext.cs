@@ -14,6 +14,10 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+        modelBuilder.Entity<IngestionRun>()
+            .HasIndex(r => r.ZipHash)
+            .IsUnique();
+
         // Same client can appear in multiple runs; unique within a single run
         modelBuilder.Entity<Client>()
             .HasIndex(c => new { c.ClientId, c.IngestionRunId })

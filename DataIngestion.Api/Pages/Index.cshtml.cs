@@ -23,6 +23,7 @@ public class IndexModel : PageModel
     public List<ClientSummaryDto> Clients { get; set; } = new();
     public IngestionResult? LastIngestionResult { get; set; }
     public bool ShowInputError { get; set; }
+    public string? IngestionError { get; set; }
 
     public IndexModel(IClientQueryService queryService, IIngestionService ingestionService)
     {
@@ -41,23 +42,26 @@ public class IndexModel : PageModel
     {
         var uploadedFile = Request.Form.Files.GetFile("ZipFile");
 
-        if (uploadedFile != null && uploadedFile.Length > 0)
+        try
         {
-            using var ms = new MemoryStream();
-            await uploadedFile.CopyToAsync(ms);
-            LastIngestionResult = await _ingestionService.IngestAsync(ms.ToArray(), uploadedFile.FileName);
+            if (uploadedFile != null && uploadedFile.Length > 0)
+            {
+                using var ms = new MemoryStream();
+                await uploadedFile.CopyToAsync(ms);
+                LastIngestionResult = await _ingestionService.IngestAsync(ms.ToArray(), uploadedFile.FileName);
+            }
+            else if (!string.IsNullOrWhiteSpace(ZipUrl))
+            {
+                LastIngestionResult = await _ingestionService.IngestAsync(ZipUrl);
+            }
+            else
+            {
+                ShowInputError = true;
+            }
         }
-        else if (!string.IsNullOrWhiteSpace(ZipUrl))
+        catch (DuplicateIngestionException ex)
         {
-            LastIngestionResult = await _ingestionService.IngestAsync(ZipUrl);
-        }
-        else
-        {
-            ShowInputError = true;
-            Runs = await _queryService.GetRunsAsync();
-            var paged = await _queryService.GetClientsAsync(1, 10000, ParseAsOf());
-            Clients = paged.Items;
-            return Page();
+            IngestionError = ex.Message;
         }
 
         Runs = await _queryService.GetRunsAsync();

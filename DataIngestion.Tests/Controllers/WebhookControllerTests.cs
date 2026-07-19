@@ -69,4 +69,16 @@ public class WebhookControllerTests
         await Assert.ThrowsAsync<HttpRequestException>(
             () => _controller.Post(new WebhookRequest { Url = "http://example.com/data.zip" }));
     }
+
+    [Fact]
+    public async Task Post_DuplicateZip_ReturnsConflict()
+    {
+        _mockService
+            .Setup(s => s.IngestAsync(It.IsAny<string>()))
+            .ThrowsAsync(new DuplicateIngestionException(3, DateTimeOffset.UtcNow));
+
+        var result = await _controller.Post(new WebhookRequest { Url = "http://example.com/data.zip" });
+
+        Assert.IsType<ConflictObjectResult>(result);
+    }
 }

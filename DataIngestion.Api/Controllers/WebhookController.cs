@@ -25,8 +25,14 @@ public class WebhookController : ControllerBase
 
         _logger.LogInformation("Webhook received for URL: {Url}", request.Url);
 
-        var result = await _ingestionService.IngestAsync(request.Url);
-
-        return Ok(result);
+        try
+        {
+            var result = await _ingestionService.IngestAsync(request.Url);
+            return Ok(result);
+        }
+        catch (DuplicateIngestionException ex)
+        {
+            return Conflict(new { error = ex.Message });
+        }
     }
 }

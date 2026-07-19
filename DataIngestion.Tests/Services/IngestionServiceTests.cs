@@ -93,7 +93,7 @@ public class IngestionServiceTests : IDisposable
     // ── Append behaviour (each run is a new snapshot) ───────────────────────
 
     [Fact]
-    public async Task IngestAsync_SameZipIngestedTwice_CreatesTwoRuns()
+    public async Task IngestAsync_SameZipIngestedTwice_ThrowsDuplicateOnSecondCall()
     {
         var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>
         {
@@ -102,12 +102,12 @@ public class IngestionServiceTests : IDisposable
 
         var service = CreateService(zip);
         await service.IngestAsync("http://example.com/data.zip");
-        await service.IngestAsync("http://example.com/data.zip");
 
-        var runCount = await _dbContext.IngestionRuns.AsNoTracking().CountAsync();
-        var clientCount = await _dbContext.Clients.AsNoTracking().CountAsync();
-        Assert.Equal(2, runCount);
-        Assert.Equal(2, clientCount); // one CLT-001 row per run
+        await Assert.ThrowsAsync<DuplicateIngestionException>(
+            () => service.IngestAsync("http://example.com/data.zip"));
+
+        // only one run should exist
+        Assert.Equal(1, await _dbContext.IngestionRuns.AsNoTracking().CountAsync());
     }
 
     [Fact]
@@ -151,6 +151,41 @@ public class IngestionServiceTests : IDisposable
 
         // Latest run has 1 account
         Assert.Equal(1, result2.AccountsProcessed);
+    }
+
+    // ── Duplicate detection ──────────────────────────────────────────────────
+
+    [Fact]
+    public async Task IngestAsync_SameZipContentTwice_ThrowsDuplicateIngestionException()
+    {
+        var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001"),
+        });
+
+        var service = CreateService(zip);
+        await service.IngestAsync("http://example.com/data.zip");
+
+        await Assert.ThrowsAsync<DuplicateIngestionException>(
+            () => service.IngestAsync("http://example.com/different-name.zip"));
+    }
+
+    [Fact]
+    public async Task IngestAsync_DifferentZipContent_CreatesNewRun()
+    {
+        var zip1 = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001"),
+        });
+        var zip2 = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-002.json"] = TestDataBuilder.ClientJson("CLT-002"),
+        });
+
+        await CreateService(zip1).IngestAsync("http://example.com/v1.zip");
+        await CreateService(zip2).IngestAsync("http://example.com/v2.zip");
+
+        Assert.Equal(2, await _dbContext.IngestionRuns.CountAsync());
     }
 
     // ── Edge cases: empty / non-JSON content ────────────────────────────────

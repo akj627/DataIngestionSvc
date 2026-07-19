@@ -37,7 +37,8 @@ public class ClientQueryServiceTests : IDisposable
         var run = new IngestionRun
         {
             KnowledgeDate = knowledgeDate ?? DateTimeOffset.UtcNow,
-            ZipUrl = "http://example.com/data.zip"
+            ZipUrl = "http://example.com/data.zip",
+            ZipHash = Guid.NewGuid().ToString("N")
         };
 
         for (var i = 1; i <= clientCount; i++)
