@@ -60,14 +60,15 @@ public class WebhookControllerTests
     }
 
     [Fact]
-    public async Task Post_ServiceThrows_ExceptionPropagates()
+    public async Task Post_HttpRequestException_ReturnsBadRequest()
     {
         _mockService
             .Setup(s => s.IngestAsync(It.IsAny<string>()))
             .ThrowsAsync(new HttpRequestException("ZIP download failed"));
 
-        await Assert.ThrowsAsync<HttpRequestException>(
-            () => _controller.Post(new WebhookRequest { Url = "http://example.com/data.zip" }));
+        var result = await _controller.Post(new WebhookRequest { Url = "http://example.com/data.zip" });
+
+        Assert.IsType<BadRequestObjectResult>(result);
     }
 
     [Fact]
