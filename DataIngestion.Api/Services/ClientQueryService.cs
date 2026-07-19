@@ -13,9 +13,9 @@ public class ClientQueryService : IClientQueryService
         _dbContext = dbContext;
     }
 
-    public async Task<PagedResult<ClientSummaryDto>> GetClientsAsync(int page, int pageSize)
+    public async Task<PagedResult<ClientSummaryDto>> GetClientsAsync(int page, int pageSize, DateTimeOffset? asOf = null)
     {
-        var latestRunId = await LatestRunIdAsync();
+        var latestRunId = await RunIdAsOfAsync(asOf);
         if (latestRunId == null)
             return new PagedResult<ClientSummaryDto> { Page = page, PageSize = pageSize };
 
@@ -50,9 +50,9 @@ public class ClientQueryService : IClientQueryService
         };
     }
 
-    public async Task<List<AccountSummaryDto>?> GetAccountsAsync(string clientId)
+    public async Task<List<AccountSummaryDto>?> GetAccountsAsync(string clientId, DateTimeOffset? asOf = null)
     {
-        var latestRunId = await LatestRunIdAsync();
+        var latestRunId = await RunIdAsOfAsync(asOf);
         if (latestRunId == null) return null;
 
         var client = await _dbContext.Clients
@@ -78,9 +78,9 @@ public class ClientQueryService : IClientQueryService
             .ToListAsync();
     }
 
-    public async Task<List<HoldingSummaryDto>?> GetHoldingsAsync(string clientId, string accountId)
+    public async Task<List<HoldingSummaryDto>?> GetHoldingsAsync(string clientId, string accountId, DateTimeOffset? asOf = null)
     {
-        var latestRunId = await LatestRunIdAsync();
+        var latestRunId = await RunIdAsOfAsync(asOf);
         if (latestRunId == null) return null;
 
         var client = await _dbContext.Clients
@@ -113,6 +113,22 @@ public class ClientQueryService : IClientQueryService
             .ToListAsync();
     }
 
-    private Task<int?> LatestRunIdAsync() =>
-        _dbContext.IngestionRuns.MaxAsync(r => (int?)r.Id);
+    private async Task<int?> RunIdAsOfAsync(DateTimeOffset? asOf)
+    {
+        if (!asOf.HasValue)
+            return await _dbContext.IngestionRuns.MaxAsync(r => (int?)r.Id);
+
+        // SQLite cannot translate DateTimeOffset comparisons; load the small
+        // runs index client-side (Id + KnowledgeDate only) and filter in memory.
+        var runs = await _dbContext.IngestionRuns
+            .AsNoTracking()
+            .Select(r => new { r.Id, r.KnowledgeDate })
+            .ToListAsync();
+
+        return runs
+            .Where(r => r.KnowledgeDate <= asOf.Value)
+            .Select(r => (int?)r.Id)
+            .DefaultIfEmpty(null)
+            .Max();
+    }
 }

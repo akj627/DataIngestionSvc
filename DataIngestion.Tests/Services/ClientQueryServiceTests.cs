@@ -210,4 +210,49 @@ public class ClientQueryServiceTests : IDisposable
 
         Assert.Null(holdings);
     }
+
+    // ── AsOf queries ─────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetClientsAsync_AsOfBetweenRuns_ReturnsFirstRunData()
+    {
+        var t1 = DateTimeOffset.UtcNow.AddHours(-2);
+        var t2 = DateTimeOffset.UtcNow;
+
+        await SeedRunAsync(t1, clientCount: 3); // run 1
+        await SeedRunAsync(t2, clientCount: 1); // run 2 (latest)
+
+        // ask for state halfway between the two runs
+        var asOf = t1.AddHours(1);
+        var result = await _service.GetClientsAsync(1, 20, asOf);
+
+        Assert.Equal(3, result.TotalCount);
+    }
+
+    [Fact]
+    public async Task GetClientsAsync_AsOfAfterAllRuns_ReturnsLatestRunData()
+    {
+        var t1 = DateTimeOffset.UtcNow.AddHours(-2);
+        var t2 = DateTimeOffset.UtcNow.AddHours(-1);
+
+        await SeedRunAsync(t1, clientCount: 3);
+        await SeedRunAsync(t2, clientCount: 1); // latest
+
+        var asOf = DateTimeOffset.UtcNow; // after both runs
+        var result = await _service.GetClientsAsync(1, 20, asOf);
+
+        Assert.Equal(1, result.TotalCount);
+    }
+
+    [Fact]
+    public async Task GetClientsAsync_AsOfBeforeAllRuns_ReturnsEmpty()
+    {
+        await SeedRunAsync(DateTimeOffset.UtcNow, clientCount: 2);
+
+        var asOf = DateTimeOffset.UtcNow.AddDays(-1); // before any run
+        var result = await _service.GetClientsAsync(1, 20, asOf);
+
+        Assert.Equal(0, result.TotalCount);
+        Assert.Empty(result.Items);
+    }
 }

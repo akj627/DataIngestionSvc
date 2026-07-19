@@ -44,17 +44,45 @@
 
 <hr />
 
-<h4 class="mb-3">
-    Clients
+<div class="d-flex align-items-center gap-3 mb-3">
+    <h4 class="mb-0">Clients</h4>
+    <div class="d-flex align-items-center gap-2 ms-2">
+        <label class="form-label mb-0 text-muted small">Dashboard as of (UTC):</label>
+        <input type="datetime-local" id="asOfPicker" class="form-control form-control-sm" style="width:200px"
+               value="@Model.AsOf" />
+        @if (!string.IsNullOrEmpty(Model.AsOf))
+        {
+            <a href="/" class="btn btn-outline-secondary btn-sm">Latest</a>
+        }
+    </div>
     @if (Model.Clients.Count > 0)
     {
-        <span class="text-muted fs-6 fw-normal">— latest ingestion run</span>
+        var runDate = Model.Clients[0].KnowledgeDate;
+        <span class="text-muted small">
+            @if (string.IsNullOrEmpty(Model.AsOf))
+            {
+                <text>— latest run · @runDate.UtcDateTime.ToString("yyyy-MM-dd HH:mm") UTC</text>
+            }
+            else
+            {
+                <text>— run as of @runDate.UtcDateTime.ToString("yyyy-MM-dd HH:mm") UTC</text>
+            }
+        </span>
     }
-</h4>
+</div>
 
 @if (Model.Clients.Count == 0)
 {
-    <p class="text-muted">No data yet. Run ingestion above to load clients.</p>
+    <p class="text-muted">
+        @if (!string.IsNullOrEmpty(Model.AsOf))
+        {
+            <text>No ingestion run found on or before @Model.AsOf (UTC).</text>
+        }
+        else
+        {
+            <text>No data yet. Run ingestion above to load clients.</text>
+        }
+    </p>
 }
 else
 {
@@ -92,6 +120,11 @@ else
         });
         document.getElementById('fileInput').addEventListener('change', function () {
             if (this.files.length > 0) document.getElementById('urlInput').value = '';
+        });
+
+        document.getElementById('asOfPicker').addEventListener('change', function () {
+            const val = this.value;
+            window.location = val ? '/?asOf=' + encodeURIComponent(val) : '/';
         });
 
         $(document).ready(function () {

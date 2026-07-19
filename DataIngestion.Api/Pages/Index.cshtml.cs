@@ -13,6 +13,9 @@ public class IndexModel : PageModel
     [BindProperty]
     public string ZipUrl { get; set; } = "http://localhost:5141/test-data-v1.zip";
 
+    [BindProperty(SupportsGet = true)]
+    public string? AsOf { get; set; }
+
     public List<ClientSummaryDto> Clients { get; set; } = new();
     public IngestionResult? LastIngestionResult { get; set; }
     public bool ShowInputError { get; set; }
@@ -25,7 +28,7 @@ public class IndexModel : PageModel
 
     public async Task OnGetAsync()
     {
-        var paged = await _queryService.GetClientsAsync(1, 10000);
+        var paged = await _queryService.GetClientsAsync(1, 10000, ParseAsOf());
         Clients = paged.Items;
     }
 
@@ -46,13 +49,21 @@ public class IndexModel : PageModel
         else
         {
             ShowInputError = true;
-            var paged = await _queryService.GetClientsAsync(1, 10000);
+            var paged = await _queryService.GetClientsAsync(1, 10000, ParseAsOf());
             Clients = paged.Items;
             return Page();
         }
 
-        var result = await _queryService.GetClientsAsync(1, 10000);
+        var result = await _queryService.GetClientsAsync(1, 10000, ParseAsOf());
         Clients = result.Items;
         return Page();
+    }
+
+    private DateTimeOffset? ParseAsOf()
+    {
+        if (string.IsNullOrEmpty(AsOf)) return null;
+        return DateTime.TryParse(AsOf, null, System.Globalization.DateTimeStyles.AssumeUniversal, out var dt)
+            ? new DateTimeOffset(dt.ToUniversalTime(), TimeSpan.Zero)
+            : null;
     }
 }
