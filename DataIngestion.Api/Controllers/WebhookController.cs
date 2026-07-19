@@ -34,5 +34,9 @@ public class WebhookController : ControllerBase
         {
             return Conflict(new { error = ex.Message });
         }
+        catch (HttpRequestException ex)
+        {
+            return BadRequest(new { error = $"Could not download ZIP: {ex.Message}" });
+        }
     }
 }

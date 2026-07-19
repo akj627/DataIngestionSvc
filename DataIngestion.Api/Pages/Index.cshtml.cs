@@ -63,6 +63,10 @@ public class IndexModel : PageModel
         {
             IngestionError = ex.Message;
         }
+        catch (HttpRequestException ex)
+        {
+            IngestionError = $"Could not download ZIP: {ex.Message}";
+        }
 
         Runs = await _queryService.GetRunsAsync();
         var result = await _queryService.GetClientsAsync(1, 10000, ParseAsOf());
