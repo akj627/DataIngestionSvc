@@ -42,8 +42,8 @@ DataIngestion.Tests/
 ```bash
 cd DataIngestion.Api
 dotnet run
-# App starts on http://localhost:5000 (or check Properties/launchSettings.json)
-# Swagger UI: http://localhost:5000/swagger
+# App starts on http://localhost:5141 (or check Properties/launchSettings.json)
+# Swagger UI: http://localhost:5141/swagger
 # DB file: DataIngestion.Api/dataingestion.db (created automatically)
 ```
 
@@ -55,9 +55,9 @@ dotnet test
 ## How to test ingestion
 Once running, POST to the webhook with the locally served test ZIP:
 ```bash
-curl -X POST http://localhost:5000/api/webhook \
+curl -X POST http://localhost:5141/api/webhook \
   -H "Content-Type: application/json" \
-  -d '{"url": "http://localhost:5000/test-data.zip"}'
+  -d '{"url": "http://localhost:5141/test-data.zip"}'
 ```
 Expected response:
 ```json
