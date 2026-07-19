@@ -119,42 +119,63 @@ The UI exposes this via a `?asOf=` query parameter that flows through Index → 
 
 Four ZIPs covering a progression of client portfolio changes for demoing append-only / as-of history.
 
+### Counts per version
+
+| Version | Clients | Accounts | Holdings | Snapshot date |
+|---|---|---|---|---|
+| v1 | 3 | 5 | 11 | 2025-03-02 |
+| v2 | 5 | 9 | 18 | 2025-06-15 |
+| v3 | 4 | 8 | 21 | 2025-09-05 |
+| v4 | 6 | 12 | 30 | 2025-11-20 |
+
 ### Client roster across versions
 
 | Client | v1 | v2 | v3 | v4 |
 |---|---|---|---|---|
-| CLT-29481 Jane Smith | ✓ | ✓ updated | ✓ same as v2 | ✓ updated |
-| CLT-30012 Michael Chen | ✓ | ✓ same | removed | — |
-| CLT-30155 Sarah Johnson | ✓ | ✓ same | ✓ same | ✓ same |
-| CLT-31000 David Martinez | ✓ | ✓ same | ✓ same | removed |
-| CLT-31500 Emily Wilson | ✓ | removed | — | — |
-| CLT-32000 Alex Thompson | — | ✓ new | ✓ updated | ✓ same as v3 |
-| CLT-33000 Maria Garcia | — | — | ✓ new | ✓ updated |
-| CLT-34000 Robert Chen | — | — | — | ✓ new |
+| CLT-29481 Jane Smith | ✓ 1 acct / 3 holdings | ✓ 2 accts / 5 holdings | ✓ 2 accts / 6 holdings | ✓ 3 accts / 8 holdings |
+| CLT-30155 Sarah Johnson | ✓ 2 accts / 4 holdings | ✓ 2 accts / 4 holdings | ✓ 1 acct / 3 holdings | ✓ 3 accts / 6 holdings |
+| CLT-31500 Emily Wilson | ✓ 2 accts / 3 holdings | removed | — | — |
+| CLT-30012 Michael Chen | — | ✓ 2 accts / 4 holdings | ✓ 3 accts / 6 holdings | ✓ 2 accts / 6 holdings |
+| CLT-31000 David Martinez | — | ✓ 2 accts / 3 holdings | removed | — |
+| CLT-32000 Alex Thompson | — | ✓ 1 acct / 2 holdings | removed | — |
+| CLT-33000 Maria Garcia | — | — | ✓ 2 accts / 6 holdings | ✓ 2 accts / 7 holdings |
+| CLT-34000 Robert Chen | — | — | — | ✓ 2 accts / 5 holdings |
+| CLT-35000 Lisa Park | — | — | — | ✓ 1 acct / 4 holdings |
 
 ### Changes per version
 
-**v1 → v2** (2025-03-02 → 2025-06-15)
-- CLT-31500 Emily Wilson **removed**; CLT-32000 Alex Thompson **added** (2 accounts: INDIVIDUAL + TRADITIONAL_IRA)
-- CLT-29481 Jane Smith ACC-10042: BND removed, MSFT added; VTI 150→175; VXUS 100→120; last_updated changed
+**v1 → v2** (3→5 clients, +7 holdings)
+- CLT-31500 Emily Wilson **removed**
+- CLT-30012 Michael Chen **added** (2 accts: INDIVIDUAL with AAPL/MSFT/GOOGL; TRADITIONAL_IRA with AGG)
+- CLT-31000 David Martinez **added** (2 accts: INDIVIDUAL with SPY/EFA; SEP_IRA with BND)
+- CLT-32000 Alex Thompson **added** (1 acct: INDIVIDUAL with QQQ/ARKK)
+- CLT-29481 Jane Smith: ROTH_IRA added (VOO+AMZN); INDIVIDUAL BND removed, MSFT+VXUS added, VTI 150→175
+- CLT-30155 Sarah Johnson: JOINT TLT removed, SPY added; QQQ 200→220
 
-**v2 → v3** (2025-06-15 → 2025-09-10)
-- CLT-30012 Michael Chen **removed**; CLT-33000 Maria Garcia **added** (2 accounts: INDIVIDUAL + ROTH_IRA; holdings: VOO, VTI, BND)
-- CLT-32000 Alex Thompson ACC-60001: NVDA added (50 shares @ $875); QQQ 45→50 shares; cash_balance 3,200→1,500; last_updated changed
+**v2 → v3** (5→4 clients, +3 holdings)
+- CLT-31000 David Martinez **removed**
+- CLT-32000 Alex Thompson **removed**
+- CLT-33000 Maria Garcia **added** (2 accts: INDIVIDUAL with VOO/VTI/SPY/AMZN; ROTH_IRA with BND/AGG)
+- CLT-29481 Jane Smith: INDIVIDUAL MSFT removed, AMZN+NVDA added, VTI 175→200; ROTH_IRA adds QQQ
+- CLT-30012 Michael Chen: ROTH_IRA added (VOO); INDIVIDUAL GOOGL removed, NVDA added; TRADITIONAL_IRA adds BND
+- CLT-30155 Sarah Johnson: ROTH_IRA **closed** (1 acct left); JOINT TLT-based holding → NVDA, QQQ 220→180, GLD 150→200
 
-**v3 → v4** (2025-09-10 → 2025-11-20)
-- CLT-31000 David Martinez **removed**; CLT-34000 Robert Chen **added** (2 accounts: INDIVIDUAL + TRADITIONAL_IRA; tech-heavy: AAPL, MSFT, NVDA, VOO, BND)
-- CLT-29481 Jane Smith ACC-10042: MSFT removed, AMZN added (60 shares); VTI 175→200; VXUS 120→100; last_updated changed
-- CLT-33000 Maria Garcia ACC-70001: SPY added (30 shares @ $460); VTI 100→120; last_updated changed
+**v3 → v4** (4→6 clients, +9 holdings)
+- CLT-34000 Robert Chen **added** (2 accts: INDIVIDUAL with AAPL/MSFT/NVDA; TRADITIONAL_IRA with VOO/BND)
+- CLT-35000 Lisa Park **added** (1 acct: INDIVIDUAL with VTI/VXUS/BND/GLD)
+- CLT-29481 Jane Smith: SEP_IRA added (BND+TLT); INDIVIDUAL NVDA removed, VTI/VXUS/AMZN up; ROTH_IRA adds MSFT, VOO up
+- CLT-30012 Michael Chen: ROTH_IRA **closed**; INDIVIDUAL GOOGL re-added, NVDA up; TRADITIONAL_IRA AGG up
+- CLT-30155 Sarah Johnson: ROTH_IRA re-opened (VTI+VOO) + INDIVIDUAL added (NVDA); JOINT SPY/GLD quantities updated
+- CLT-33000 Maria Garcia: INDIVIDUAL NVDA added, VTI+SPY up; ROTH_IRA AGG up
 
 ### Demo sequence for as-of feature
-1. Ingest v1 → 5 clients, Emily Wilson visible
-2. Ingest v2 → Emily Wilson gone, Alex Thompson in, Jane Smith updated
-3. Ingest v3 → Michael Chen gone, Maria Garcia in, Alex Thompson has NVDA
-4. Ingest v4 → David Martinez gone, Robert Chen in, Jane Smith rebalanced, Maria Garcia adds SPY
+1. Ingest v1 → 3 clients, Emily Wilson visible
+2. Ingest v2 → 5 clients, Emily Wilson gone, 3 new clients, Jane Smith expanded to 2 accounts
+3. Ingest v3 → 4 clients, David+Alex gone, Maria Garcia in, Sarah drops to 1 account, Michael adds ROTH_IRA
+4. Ingest v4 → 6 clients, Robert Chen + Lisa Park in, Jane adds SEP_IRA, Sarah back to 3 accounts
 5. Set date picker between any two runs → grid snaps to that snapshot
 6. Click a client → Accounts/Holdings pages preserve the as-of context
-7. Try ingesting v2 again → duplicate warning (same ZIP hash rejected)
+7. Try ingesting any ZIP again → duplicate warning (same ZIP hash rejected)
 
 ## Known SQLite limitation
 SQLite via EF Core cannot translate `DateTimeOffset` comparisons (`<=`, `>=`) to SQL. Workarounds used:
