@@ -117,33 +117,44 @@ The UI exposes this via a `?asOf=` query parameter that flows through Index → 
 
 ## Test data files (wwwroot/)
 
-Two ZIPs for demoing the append-only / as-of history feature:
+Four ZIPs covering a progression of client portfolio changes for demoing append-only / as-of history.
 
-- **test-data-v1.zip** — 5 clients: CLT-29481 (Jane Smith), CLT-30012, CLT-30155, CLT-31000, CLT-31500 (Emily Wilson)
-- **test-data-v2.zip** — same 5 slots but CLT-31500 (Emily Wilson) replaced by CLT-32000 (Alex Thompson); Jane Smith updated
+### Client roster across versions
 
-### What changed in Jane Smith (CLT-29481) between v1 and v2
+| Client | v1 | v2 | v3 | v4 |
+|---|---|---|---|---|
+| CLT-29481 Jane Smith | ✓ | ✓ updated | ✓ same as v2 | ✓ updated |
+| CLT-30012 Michael Chen | ✓ | ✓ same | removed | — |
+| CLT-30155 Sarah Johnson | ✓ | ✓ same | ✓ same | ✓ same |
+| CLT-31000 David Martinez | ✓ | ✓ same | ✓ same | removed |
+| CLT-31500 Emily Wilson | ✓ | removed | — | — |
+| CLT-32000 Alex Thompson | — | ✓ new | ✓ updated | ✓ same as v3 |
+| CLT-33000 Maria Garcia | — | — | ✓ new | ✓ updated |
+| CLT-34000 Robert Chen | — | — | — | ✓ new |
 
-| Field | V1 | V2 |
-|---|---|---|
-| `last_updated` | 2025-03-02 | 2025-06-15 |
-| `cash_balance` (ACC-10042) | 2,450.75 | 1,850.50 |
-| `total_value` (ACC-10042) | 61,100.75 | 62,885.50 |
-| BND holding | 200 shares | removed |
-| MSFT holding | — | added |
-| VTI quantity | 150 | 175 |
-| VTI market value | 38,250 | 45,675 |
-| VXUS quantity | 100 | 120 |
-| VXUS market value | 5,600 | 6,960 |
+### Changes per version
 
-Account ACC-10043 (ROTH IRA / VOO) and clients CLT-30012, CLT-30155, CLT-31000 are identical between v1 and v2.
+**v1 → v2** (2025-03-02 → 2025-06-15)
+- CLT-31500 Emily Wilson **removed**; CLT-32000 Alex Thompson **added** (2 accounts: INDIVIDUAL + TRADITIONAL_IRA)
+- CLT-29481 Jane Smith ACC-10042: BND removed, MSFT added; VTI 150→175; VXUS 100→120; last_updated changed
+
+**v2 → v3** (2025-06-15 → 2025-09-10)
+- CLT-30012 Michael Chen **removed**; CLT-33000 Maria Garcia **added** (2 accounts: INDIVIDUAL + ROTH_IRA; holdings: VOO, VTI, BND)
+- CLT-32000 Alex Thompson ACC-60001: NVDA added (50 shares @ $875); QQQ 45→50 shares; cash_balance 3,200→1,500; last_updated changed
+
+**v3 → v4** (2025-09-10 → 2025-11-20)
+- CLT-31000 David Martinez **removed**; CLT-34000 Robert Chen **added** (2 accounts: INDIVIDUAL + TRADITIONAL_IRA; tech-heavy: AAPL, MSFT, NVDA, VOO, BND)
+- CLT-29481 Jane Smith ACC-10042: MSFT removed, AMZN added (60 shares); VTI 175→200; VXUS 120→100; last_updated changed
+- CLT-33000 Maria Garcia ACC-70001: SPY added (30 shares @ $460); VTI 100→120; last_updated changed
 
 ### Demo sequence for as-of feature
-1. Ingest v1 → note Run #1 knowledge date
-2. Ingest v2 → grid updates (Emily Wilson gone, Alex Thompson in, Jane Smith updated)
-3. Set date picker to a time between the two runs → grid snaps back to Run #1 (Emily Wilson back, Jane Smith's old holdings)
-4. Click a client row → Accounts page preserves the as-of context
-5. Click **Latest** → returns to current view
+1. Ingest v1 → 5 clients, Emily Wilson visible
+2. Ingest v2 → Emily Wilson gone, Alex Thompson in, Jane Smith updated
+3. Ingest v3 → Michael Chen gone, Maria Garcia in, Alex Thompson has NVDA
+4. Ingest v4 → David Martinez gone, Robert Chen in, Jane Smith rebalanced, Maria Garcia adds SPY
+5. Set date picker between any two runs → grid snaps to that snapshot
+6. Click a client → Accounts/Holdings pages preserve the as-of context
+7. Try ingesting v2 again → duplicate warning (same ZIP hash rejected)
 
 ## Known SQLite limitation
 SQLite via EF Core cannot translate `DateTimeOffset` comparisons (`<=`, `>=`) to SQL. Workarounds used:
