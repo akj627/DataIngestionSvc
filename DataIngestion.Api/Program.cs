@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.AddRazorPages();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
@@ -28,5 +29,6 @@ app.UseSwaggerUI();
 
 app.UseStaticFiles();
 app.MapControllers();
+app.MapRazorPages();
 
 app.Run();
