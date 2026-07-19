@@ -22,12 +22,20 @@ public class IngestionService : IIngestionService
     public async Task<IngestionResult> IngestAsync(string zipUrl)
     {
         var zipBytes = await DownloadZipAsync(zipUrl);
+        return await ProcessAsync(zipBytes, zipUrl);
+    }
+
+    public Task<IngestionResult> IngestAsync(byte[] zipBytes, string sourceLabel) =>
+        ProcessAsync(zipBytes, sourceLabel);
+
+    private async Task<IngestionResult> ProcessAsync(byte[] zipBytes, string sourceLabel)
+    {
         var clientDtos = ParseZip(zipBytes);
 
         var run = new IngestionRun
         {
             KnowledgeDate = DateTimeOffset.UtcNow,
-            ZipUrl = zipUrl
+            ZipUrl = sourceLabel
         };
         _dbContext.IngestionRuns.Add(run);
 

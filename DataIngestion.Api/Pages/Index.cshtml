@@ -7,15 +7,25 @@
 <div class="row mb-4">
     <div class="col-12">
         <h4 class="mb-3">Ingestion</h4>
-        <form method="post" class="row g-2 align-items-end">
-            <div class="col-md-8">
-                <label asp-for="ZipUrl" class="form-label">ZIP URL</label>
-                <input asp-for="ZipUrl" class="form-control" placeholder="https://..." />
-                <span asp-validation-for="ZipUrl" class="text-danger small"></span>
+        <form method="post" enctype="multipart/form-data">
+            <div class="row g-2 align-items-end mb-2">
+                <div class="col-md-8">
+                    <label asp-for="ZipUrl" class="form-label">ZIP URL</label>
+                    <input id="urlInput" asp-for="ZipUrl" class="form-control" placeholder="https://..." />
+                </div>
             </div>
-            <div class="col-auto">
-                <button type="submit" class="btn btn-primary">Run Ingestion</button>
+            <div class="text-muted small my-2 ms-1">— or browse for a local file —</div>
+            <div class="row g-2 align-items-end mb-3">
+                <div class="col-md-8">
+                    <label class="form-label">Local ZIP file</label>
+                    <input id="fileInput" type="file" name="ZipFile" accept=".zip" class="form-control" />
+                </div>
             </div>
+            @if (Model.ShowInputError)
+            {
+                <div class="text-danger small mb-2">Provide a URL or select a local file.</div>
+            }
+            <button type="submit" class="btn btn-primary">Run Ingestion</button>
         </form>
 
         @if (Model.LastIngestionResult != null)
@@ -77,6 +87,13 @@ else
 
 @section Scripts {
     <script>
+        document.getElementById('urlInput').addEventListener('input', function () {
+            if (this.value) document.getElementById('fileInput').value = '';
+        });
+        document.getElementById('fileInput').addEventListener('change', function () {
+            if (this.files.length > 0) document.getElementById('urlInput').value = '';
+        });
+
         $(document).ready(function () {
             $('#clientsTable').DataTable({ pageLength: 10 });
             $('#clientsTable tbody').on('click', 'tr', function () {

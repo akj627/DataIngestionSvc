@@ -15,6 +15,7 @@ public class IndexModel : PageModel
 
     public List<ClientSummaryDto> Clients { get; set; } = new();
     public IngestionResult? LastIngestionResult { get; set; }
+    public bool ShowInputError { get; set; }
 
     public IndexModel(IClientQueryService queryService, IIngestionService ingestionService)
     {
@@ -30,17 +31,26 @@ public class IndexModel : PageModel
 
     public async Task<IActionResult> OnPostAsync()
     {
-        if (string.IsNullOrWhiteSpace(ZipUrl))
-            ModelState.AddModelError(nameof(ZipUrl), "URL is required");
+        var uploadedFile = Request.Form.Files.GetFile("ZipFile");
 
-        if (!ModelState.IsValid)
+        if (uploadedFile != null && uploadedFile.Length > 0)
         {
+            using var ms = new MemoryStream();
+            await uploadedFile.CopyToAsync(ms);
+            LastIngestionResult = await _ingestionService.IngestAsync(ms.ToArray(), uploadedFile.FileName);
+        }
+        else if (!string.IsNullOrWhiteSpace(ZipUrl))
+        {
+            LastIngestionResult = await _ingestionService.IngestAsync(ZipUrl);
+        }
+        else
+        {
+            ShowInputError = true;
             var paged = await _queryService.GetClientsAsync(1, 10000);
             Clients = paged.Items;
             return Page();
         }
 
-        LastIngestionResult = await _ingestionService.IngestAsync(ZipUrl);
         var result = await _queryService.GetClientsAsync(1, 10000);
         Clients = result.Items;
         return Page();
