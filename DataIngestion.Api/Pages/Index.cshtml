@@ -36,7 +36,7 @@
                 @r.ClientsProcessed clients &nbsp;·&nbsp;
                 @r.AccountsProcessed accounts &nbsp;·&nbsp;
                 @r.HoldingsProcessed holdings &nbsp;·&nbsp;
-                <span class="text-muted">@r.KnowledgeDate.UtcDateTime.ToString("yyyy-MM-dd HH:mm:ss") UTC</span>
+                <span class="text-muted">@r.KnowledgeDate.LocalDateTime.ToString("yyyy-MM-dd HH:mm:ss")</span>
             </div>
         }
     </div>
@@ -47,7 +47,7 @@
 <div class="d-flex align-items-center gap-3 mb-3">
     <h4 class="mb-0">Clients</h4>
     <div class="d-flex align-items-center gap-2 ms-2">
-        <label class="form-label mb-0 text-muted small">Dashboard as of (UTC):</label>
+        <label class="form-label mb-0 text-muted small">Dashboard as of:</label>
         <input type="datetime-local" id="asOfPicker" class="form-control form-control-sm" style="width:200px"
                value="@Model.AsOf" />
         @if (!string.IsNullOrEmpty(Model.AsOf))
@@ -61,11 +61,11 @@
         <span class="text-muted small">
             @if (string.IsNullOrEmpty(Model.AsOf))
             {
-                <text>— latest run · @runDate.UtcDateTime.ToString("yyyy-MM-dd HH:mm") UTC</text>
+                <text>— latest run · @runDate.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</text>
             }
             else
             {
-                <text>— run as of @runDate.UtcDateTime.ToString("yyyy-MM-dd HH:mm") UTC</text>
+                <text>— run as of @runDate.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</text>
             }
         </span>
     }
@@ -76,7 +76,7 @@
     <p class="text-muted">
         @if (!string.IsNullOrEmpty(Model.AsOf))
         {
-            <text>No ingestion run found on or before @Model.AsOf (UTC).</text>
+            <text>No ingestion run found on or before @Model.AsOf.</text>
         }
         else
         {
@@ -105,8 +105,8 @@ else
                     <td>@c.FirstName @c.LastName</td>
                     <td>@c.Email</td>
                     <td>@c.AdvisorId</td>
-                    <td>@c.LastUpdated.UtcDateTime.ToString("yyyy-MM-dd")</td>
-                    <td>@c.KnowledgeDate.UtcDateTime.ToString("yyyy-MM-dd HH:mm")</td>
+                    <td>@c.LastUpdated.LocalDateTime.ToString("yyyy-MM-dd")</td>
+                    <td>@c.KnowledgeDate.LocalDateTime.ToString("yyyy-MM-dd HH:mm")</td>
                 </tr>
             }
         </tbody>

@@ -32,8 +32,8 @@ public class AccountsModel : PageModel
     private DateTimeOffset? ParseAsOf()
     {
         if (string.IsNullOrEmpty(AsOf)) return null;
-        return DateTime.TryParse(AsOf, null, System.Globalization.DateTimeStyles.AssumeUniversal, out var dt)
-            ? new DateTimeOffset(dt.ToUniversalTime(), TimeSpan.Zero)
+        return DateTime.TryParse(AsOf, null, System.Globalization.DateTimeStyles.AssumeLocal, out var dt)
+            ? new DateTimeOffset(dt).ToUniversalTime()
             : null;
     }
 }
