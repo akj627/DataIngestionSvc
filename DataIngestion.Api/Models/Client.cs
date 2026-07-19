@@ -23,5 +23,8 @@ public class Client
 
     public DateTimeOffset LastUpdated { get; set; }
 
+    public int IngestionRunId { get; set; }
+    public IngestionRun IngestionRun { get; set; } = null!;
+
     public ICollection<Account> Accounts { get; set; } = new List<Account>();
 }

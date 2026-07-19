@@ -73,10 +73,27 @@ public class IngestionServiceTests : IDisposable
         Assert.Equal(12, result.HoldingsProcessed);
     }
 
-    // ── Upsert behaviour ────────────────────────────────────────────────────
+    [Fact]
+    public async Task IngestAsync_ReturnsRunIdAndKnowledgeDate()
+    {
+        var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>
+        {
+            ["CLT-001.json"] = TestDataBuilder.ClientJson("CLT-001"),
+        });
+
+        var before = DateTimeOffset.UtcNow;
+        var result = await CreateService(zip).IngestAsync("http://example.com/data.zip");
+        var after = DateTimeOffset.UtcNow;
+
+        Assert.True(result.RunId > 0);
+        Assert.True(result.KnowledgeDate >= before);
+        Assert.True(result.KnowledgeDate <= after);
+    }
+
+    // ── Append behaviour (each run is a new snapshot) ───────────────────────
 
     [Fact]
-    public async Task IngestAsync_SameZipIngestedTwice_DoesNotDuplicateClients()
+    public async Task IngestAsync_SameZipIngestedTwice_CreatesTwoRuns()
     {
         var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>
         {
@@ -87,14 +104,14 @@ public class IngestionServiceTests : IDisposable
         await service.IngestAsync("http://example.com/data.zip");
         await service.IngestAsync("http://example.com/data.zip");
 
+        var runCount = await _dbContext.IngestionRuns.AsNoTracking().CountAsync();
         var clientCount = await _dbContext.Clients.AsNoTracking().CountAsync();
-        var accountCount = await _dbContext.Accounts.AsNoTracking().CountAsync();
-        Assert.Equal(1, clientCount);
-        Assert.Equal(1, accountCount);
+        Assert.Equal(2, runCount);
+        Assert.Equal(2, clientCount); // one CLT-001 row per run
     }
 
     [Fact]
-    public async Task IngestAsync_SecondIngestionWithUpdatedEmail_UpdatesExistingRecord()
+    public async Task IngestAsync_SecondIngestionWithUpdatedEmail_LatestRunHasNewEmail()
     {
         var zip1 = TestDataBuilder.CreateZip(new Dictionary<string, string>
         {
@@ -106,15 +123,15 @@ public class IngestionServiceTests : IDisposable
         });
 
         await CreateService(zip1).IngestAsync("http://example.com/data.zip");
-        await CreateService(zip2).IngestAsync("http://example.com/data.zip");
+        var result2 = await CreateService(zip2).IngestAsync("http://example.com/data.zip");
 
-        var client = await _dbContext.Clients.AsNoTracking()
-            .SingleAsync(c => c.ClientId == "CLT-001");
-        Assert.Equal("new@example.com", client.Email);
+        var latestClient = await _dbContext.Clients.AsNoTracking()
+            .SingleAsync(c => c.ClientId == "CLT-001" && c.IngestionRunId == result2.RunId);
+        Assert.Equal("new@example.com", latestClient.Email);
     }
 
     [Fact]
-    public async Task IngestAsync_SecondIngestionWithFewerAccounts_RemovesOldAccounts()
+    public async Task IngestAsync_SecondIngestionWithFewerAccounts_LatestRunHasFewerAccounts()
     {
         var zip1 = TestDataBuilder.CreateZip(new Dictionary<string, string>
         {
@@ -126,16 +143,20 @@ public class IngestionServiceTests : IDisposable
         });
 
         await CreateService(zip1).IngestAsync("http://example.com/data.zip");
-        await CreateService(zip2).IngestAsync("http://example.com/data.zip");
+        var result2 = await CreateService(zip2).IngestAsync("http://example.com/data.zip");
 
-        var accountCount = await _dbContext.Accounts.AsNoTracking().CountAsync();
-        Assert.Equal(1, accountCount);
+        // All-time total: 3 from run 1 + 1 from run 2
+        var totalAccounts = await _dbContext.Accounts.AsNoTracking().CountAsync();
+        Assert.Equal(4, totalAccounts);
+
+        // Latest run has 1 account
+        Assert.Equal(1, result2.AccountsProcessed);
     }
 
     // ── Edge cases: empty / non-JSON content ────────────────────────────────
 
     [Fact]
-    public async Task IngestAsync_EmptyZip_ReturnsZeroCountsAndPersistsNothing()
+    public async Task IngestAsync_EmptyZip_ReturnsZeroCountsAndCreatesEmptyRun()
     {
         var zip = TestDataBuilder.CreateZip(new Dictionary<string, string>());
 
@@ -144,6 +165,7 @@ public class IngestionServiceTests : IDisposable
         Assert.Equal(0, result.ClientsProcessed);
         Assert.Equal(0, result.AccountsProcessed);
         Assert.Equal(0, result.HoldingsProcessed);
+        Assert.True(result.RunId > 0);
         Assert.Equal(0, await _dbContext.Clients.AsNoTracking().CountAsync());
     }
 

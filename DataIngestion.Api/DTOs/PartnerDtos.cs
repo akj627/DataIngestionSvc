@@ -91,4 +91,6 @@ public class IngestionResult
     public int ClientsProcessed { get; set; }
     public int AccountsProcessed { get; set; }
     public int HoldingsProcessed { get; set; }
+    public int RunId { get; set; }
+    public DateTimeOffset KnowledgeDate { get; set; }
 }

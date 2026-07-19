@@ -3,7 +3,6 @@ using System.Text.Json;
 using DataIngestion.Api.Data;
 using DataIngestion.Api.DTOs;
 using DataIngestion.Api.Models;
-using Microsoft.EntityFrameworkCore;
 
 namespace DataIngestion.Api.Services;
 
@@ -22,21 +21,47 @@ public class IngestionService : IIngestionService
 
     public async Task<IngestionResult> IngestAsync(string zipUrl)
     {
-        var result = new IngestionResult();
-
         var zipBytes = await DownloadZipAsync(zipUrl);
         var clientDtos = ParseZip(zipBytes);
 
+        var run = new IngestionRun
+        {
+            KnowledgeDate = DateTimeOffset.UtcNow,
+            ZipUrl = zipUrl
+        };
+        _dbContext.IngestionRuns.Add(run);
+
+        var result = new IngestionResult();
+
         foreach (var dto in clientDtos)
         {
-            await UpsertClientAsync(dto, result);
+            var client = new Client { ClientId = dto.ClientId, IngestionRun = run };
+            MapClientFields(dto, client);
+
+            foreach (var accountDto in dto.Accounts)
+            {
+                var account = MapAccount(accountDto);
+                client.Accounts.Add(account);
+                result.AccountsProcessed++;
+                result.HoldingsProcessed += account.Holdings.Count;
+            }
+
+            _dbContext.Clients.Add(client);
+            result.ClientsProcessed++;
         }
+
+        run.ClientsProcessed = result.ClientsProcessed;
+        run.AccountsProcessed = result.AccountsProcessed;
+        run.HoldingsProcessed = result.HoldingsProcessed;
 
         await _dbContext.SaveChangesAsync();
 
+        result.RunId = run.Id;
+        result.KnowledgeDate = run.KnowledgeDate;
+
         _logger.LogInformation(
-            "Ingestion complete: {Clients} clients, {Accounts} accounts, {Holdings} holdings",
-            result.ClientsProcessed, result.AccountsProcessed, result.HoldingsProcessed);
+            "Run {RunId} ({KnowledgeDate}): {Clients} clients, {Accounts} accounts, {Holdings} holdings",
+            run.Id, run.KnowledgeDate, result.ClientsProcessed, result.AccountsProcessed, result.HoldingsProcessed);
 
         return result;
     }
@@ -77,38 +102,6 @@ public class IngestionService : IIngestionService
         return clients;
     }
 
-    private async Task UpsertClientAsync(ClientDto dto, IngestionResult result)
-    {
-        var existing = await _dbContext.Clients
-            .Include(c => c.Accounts)
-                .ThenInclude(a => a.Holdings)
-            .FirstOrDefaultAsync(c => c.ClientId == dto.ClientId);
-
-        if (existing != null)
-        {
-            // Remove old accounts and holdings — will be replaced with incoming data
-            _dbContext.Accounts.RemoveRange(existing.Accounts);
-            existing.Accounts.Clear();
-            MapClientFields(dto, existing);
-        }
-        else
-        {
-            existing = new Client { ClientId = dto.ClientId };
-            MapClientFields(dto, existing);
-            _dbContext.Clients.Add(existing);
-        }
-
-        foreach (var accountDto in dto.Accounts)
-        {
-            var account = MapAccount(accountDto);
-            existing.Accounts.Add(account);
-            result.AccountsProcessed++;
-            result.HoldingsProcessed += account.Holdings.Count;
-        }
-
-        result.ClientsProcessed++;
-    }
-
     private static void MapClientFields(ClientDto dto, Client client)
     {
         client.FirstName = dto.FirstName;
@@ -120,7 +113,7 @@ public class IngestionService : IIngestionService
 
     private static Account MapAccount(AccountDto dto)
     {
-        var account = new Account
+        return new Account
         {
             AccountId = dto.AccountId,
             AccountType = dto.AccountType,
@@ -141,7 +134,5 @@ public class IngestionService : IIngestionService
                 AssetClass = h.AssetClass
             }).ToList()
         };
-
-        return account;
     }
 }
