@@ -83,6 +83,21 @@ public class ClientQueryServiceTests : IDisposable
         return run;
     }
 
+    // ── GetRuns ──────────────────────────────────────────────────────────────
+
+    [Fact]
+    public async Task GetRunsAsync_ReturnsAllRunsNewestFirst()
+    {
+        var run1 = await SeedRunAsync(DateTimeOffset.UtcNow.AddHours(-1));
+        var run2 = await SeedRunAsync(DateTimeOffset.UtcNow);
+
+        var runs = await _service.GetRunsAsync();
+
+        Assert.Equal(2, runs.Count);
+        Assert.Equal(run2.Id, runs[0].RunId); // newest first
+        Assert.Equal(run1.Id, runs[1].RunId);
+    }
+
     // ── GetClients ───────────────────────────────────────────────────────────
 
     [Fact]
